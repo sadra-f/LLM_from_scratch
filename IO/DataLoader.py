@@ -15,17 +15,23 @@ class MDataLoader:
         return self.__next__()
 
     def __next__(self):
-        for line in self._file_handle:
-            self._current_window.extend(self.tokenizer.tokenize(line)['input_ids'])
-            if len(self._current_window) < self.window_size + 1: # +1 since the y_i is x_(i+1) i.e. the next token for the task of next token prediction
-                continue
-            tmp_x = self._current_window[:self.window_size]
-            tmp_y = self._current_window[1:self.window_size+1]
-            yield tmp_x, tmp_y
-            self._current_window = self._current_window[self.window_size:]
-        eos_token = self.tokenizer.tokenize("<|endoftext|>")['input_ids'][0]
-        self._current_window.extend([eos_token for _ in range(self.window_size - len(self._current_window) + 1)])
-        yield self._current_window[:self.window_size], self._current_window[1:self.window_size+1]
+        while True:
+            line = self.file_handle.readline()
+            if not line:
+                self.file_handle.close()
+                raise StopIteration
+
+            tokens = self.tokenizer.tokenize(line)["input_ids"]
+            self.buffer.extend(tokens)
+            while len(self.buffer) >= self.window_size + 1:
+                x = self.buffer[:self.window_size]
+                y = self.buffer[1:self.window_size + 1]
+                self.buffer = self.buffer[self.stride:]
+
+                return (
+                    torch.tensor(x, dtype=torch.long),
+                    torch.tensor(y, dtype=torch.long)
+                )
 
 
 
@@ -37,3 +43,46 @@ class MDataLoader:
         if self._file_handle:
             self._file_handle.close()
             self._file_handle = None
+
+
+
+import torch
+
+class StreamingWindowLoader:
+    def __init__(self, file_path, tokenizer, window_size, stride=1):
+        self.file_path = file_path
+        self.tokenizer = tokenizer
+        self.window_size = window_size
+        self.stride = stride
+
+    def __iter__(self):
+        self.file_handle = open(self.file_path, "r", encoding="utf-8")
+        self.buffer = []
+
+        return self
+
+    def __next__(self):
+        while True:
+            line = self.file_handle.readline()
+
+            # End of file
+            if not line:
+                self.file_handle.close()
+                raise StopIteration
+
+            # Correct HuggingFace usage
+            tokens = self.tokenizer.tokenize(line)["input_ids"]
+            self.buffer.extend(tokens)
+
+            # Produce multiple windows if possible
+            while len(self.buffer) >= self.window_size + 1:
+                x = self.buffer[:self.window_size]
+                y = self.buffer[1:self.window_size + 1]
+
+                # slide buffer (controlled overlap)
+                self.buffer = self.buffer[self.stride:]
+
+                return (
+                    torch.tensor(x, dtype=torch.long),
+                    torch.tensor(y, dtype=torch.long)
+                )
