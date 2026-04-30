@@ -43,13 +43,13 @@ class ImplicitMultiHeadAttention(nn.Module):
         self._d_model = d_model
         self._num_heads = num_heads
         self._d_att = d_model / num_heads
-        self._att_scale = torch.sqrt(self._d_att)
+        self._att_scale = torch.sqrt(torch.tensor(self._d_att))
         self._linear_proj = MFeedForward(d_model, d_model)
         self.q_w = MFeedForward(d_model, d_model)
         self.k_w = MFeedForward(d_model, d_model)
         self.v_w = MFeedForward(d_model, d_model)
         #concat!
-        self._linear_out = MFeedForward()
+        self._linear_out = MFeedForward(d_model, d_model)
 
     def forward(self, x, mask):
         _batch, _seq, _dim = x.shape
@@ -58,7 +58,7 @@ class ImplicitMultiHeadAttention(nn.Module):
         K = self.k_w(x).reshape(_batch, _seq, self._num_heads, -1).transpose(2,1) # from (_batch, _seq, _dim) to (_batch, _seq, num_heads, d_att) to (_batch, num_heads, _seq, d_att)
         V = self.v_w(x).reshape(_batch, _seq, self._num_heads, -1).transpose(2,1) # from (_batch, _seq, _dim) to (_batch, _seq, num_heads, d_att) to (_batch, num_heads, _seq, d_att)
         QKt = torch.matmul(Q, K.transpose(-2, -1)) / self._att_scale # (_batch, num_heads, _seq, _seq)
-        QKt.masked_fill_(mask == 1, -1e10)
+        QKt.masked_fill_(mask == 0, -1e10)
         att_weights = torch.softmax(QKt, dim=-1)
         pre_x = torch.matmul(att_weights, V) # (_batch, num_heads, _seq, d_att)
         x = pre_x.transpose(2,1).reshape(_batch, _seq, -1) # from (_batch, num_heads, _seq, d_att) to (_batch, _seq, num_heads, d_att) to (_batch, _seq, _dim)
