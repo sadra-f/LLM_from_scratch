@@ -21,7 +21,7 @@ class MDataLoader:
                 self.file_handle.close()
                 raise StopIteration
 
-            tokens = self.tokenizer.tokenize(line)["input_ids"]
+            tokens = self.tokenizer.encode(line)["input_ids"]
             self.buffer.extend(tokens)
             while len(self.buffer) >= self.window_size + 1:
                 x = self.buffer[:self.window_size]
@@ -71,7 +71,7 @@ class StreamingWindowLoader:
                 raise StopIteration
 
             # Correct HuggingFace usage
-            tokens = self.tokenizer.tokenize(line)["input_ids"]
+            tokens = self.tokenizer.encode(line)["input_ids"]
             self.buffer.extend(tokens)
 
             # Produce multiple windows if possible
