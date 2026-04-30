@@ -1,14 +1,15 @@
 import torch
 from torch import nn
 from .SelfAttention import MSelfAttention
+from .MultiHeadAttention import ImplicitMultiHeadAttention
 from .FeedForward import MFeedForward
 
 class MTransformerBlock(nn.Module):
-    def __init__(self, dim):
+    def __init__(self, dim, num_heads=3):
         super().__init__()
         self.fnn = MFeedForward(dim, dim)
         self.norm = nn.LayerNorm(dim)
-        self.atl = MSelfAttention(dim, dim)
+        self.atl = ImplicitMultiHeadAttention(dim, num_heads)
         self.norm2 = nn.LayerNorm(dim)
 
     def forward(self, x, mask):

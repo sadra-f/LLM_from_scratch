@@ -20,7 +20,7 @@ class MiniLM(nn.Module):
         self._embedding = nn.Embedding(self._vocab_size, self._model_dim)
         self._pos_embedding = nn.Embedding(self._MAX_POS_VALUE, self._model_dim)
 
-        self._transformer_blocks = nn.ModuleList([ MTransformerBlock(self._model_dim) for _ in range(self._num_layers) ])
+        self._transformer_blocks = nn.ModuleList([ MTransformerBlock(self._model_dim, 4) for _ in range(self._num_layers) ])
 
         self._out_linear = nn.Linear(self._model_dim, self._vocab_size)
         self._out_softmax = nn.Softmax(-1)
