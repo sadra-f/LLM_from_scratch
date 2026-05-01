@@ -4,9 +4,9 @@ from torch import nn
 
 
 class MFeedForward(nn.Module):
-    def __init__(self, inp_dim, output_dim):
+    def __init__(self, inp_dim, output_dim, _internal_dim_multiplier=4):
         super().__init__()
-        self._internal_dim = 4 * inp_dim
+        self._internal_dim = _internal_dim_multiplier * inp_dim
         self._net = nn.Sequential(
             nn.Linear(inp_dim, self._internal_dim),
             # nn.ReLU(),
