@@ -14,7 +14,7 @@ class MTransformerBlock(nn.Module):
 
     def forward(self, x, mask):
         attn_out = self.atl(x, mask) # Custom Attention Block/Module
-        x = self.norm2(attn_out + x) # add the input to the output ( Residual connection ) and then normalize
+        x = x + self.norm2(attn_out) # add the input to the output ( Residual connection ) and then normalize
         fnn_out = self.fnn(x) # extract new features
-        x = self.norm(fnn_out + x) # add the input to the output ( Residual connection ) and then normalize
+        x = x + self.norm(fnn_out) # add the input to the output ( Residual connection ) and then normalize
         return x
