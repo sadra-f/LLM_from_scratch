@@ -5,7 +5,7 @@ from .Transformer import MTransformerBlock
 
 
 class MiniLM(nn.Module):
-    def __init__(self, vocab_size, d_model, num_layers, do_logits_output=True):
+    def __init__(self, vocab_size, d_model, num_layers, do_logits_output=True, transformer_heads=4):
         super().__init__()
         
         self._vocab_size = vocab_size
@@ -20,7 +20,7 @@ class MiniLM(nn.Module):
         self._embedding = nn.Embedding(self._vocab_size, self._model_dim)
         self._pos_embedding = nn.Embedding(self._MAX_POS_VALUE, self._model_dim)
 
-        self._transformer_blocks = nn.ModuleList([ MTransformerBlock(self._model_dim, 4) for _ in range(self._num_layers) ])
+        self._transformer_blocks = nn.ModuleList([ MTransformerBlock(self._model_dim, transformer_heads) for _ in range(self._num_layers) ])
 
         self._out_linear = nn.Linear(self._model_dim, self._vocab_size)
         self._out_softmax = nn.Softmax(-1)
