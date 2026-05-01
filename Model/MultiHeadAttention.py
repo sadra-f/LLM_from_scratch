@@ -13,10 +13,10 @@ class EplicitMultiHeadAttention(nn.Module):
         self._num_heads = num_heads
         self._heads_out_dim = d_model / num_heads
         self._heads_in_dim = d_model
-        self._proj_layer = MFeedForward(d_model, d_model)
+        self._proj_layer = nn.Linear(d_model, d_model)
         self._heads = nn.ModuleList([ MSelfAttention(self._heads_in_dim, self._heads_out_dim) for _ in range(self._num_heads) ])
         #Concat head outputs
-        self._out_Linear = MFeedForward(d_model, d_model)
+        self._out_Linear = nn.Linear(d_model, d_model)
 
 
 
@@ -44,12 +44,12 @@ class ImplicitMultiHeadAttention(nn.Module):
         self._num_heads = num_heads
         self._d_att = d_model / num_heads
         self._att_scale = torch.sqrt(torch.tensor(self._d_att))
-        self._linear_proj = MFeedForward(d_model, d_model)
-        self.q_w = MFeedForward(d_model, d_model)
-        self.k_w = MFeedForward(d_model, d_model)
-        self.v_w = MFeedForward(d_model, d_model)
+        self._linear_proj = nn.Linear(d_model, d_model)
+        self.q_w = nn.Linear(d_model, d_model)
+        self.k_w = nn.Linear(d_model, d_model)
+        self.v_w = nn.Linear(d_model, d_model)
         #concat!
-        self._linear_out = MFeedForward(d_model, d_model)
+        self._linear_out = nn.Linear(d_model, d_model)
 
     def forward(self, x, mask):
         _batch, _seq, _dim = x.shape
