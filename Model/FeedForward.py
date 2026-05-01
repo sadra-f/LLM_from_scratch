@@ -9,7 +9,8 @@ class MFeedForward(nn.Module):
         self._internal_dim = 4 * inp_dim
         self._net = nn.Sequential(
             nn.Linear(inp_dim, self._internal_dim),
-            nn.ReLU(),
+            # nn.ReLU(),
+            nn.GELU(),
             nn.Linear(self._internal_dim, output_dim), 
             # Won't End with an activation function so that the new features are not lost + ReLU removes all negative features which hold singal for the model
         )
