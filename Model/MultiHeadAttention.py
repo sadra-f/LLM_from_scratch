@@ -48,6 +48,7 @@ class ImplicitMultiHeadAttention(nn.Module):
         self.q_w = nn.Linear(d_model, d_model)
         self.k_w = nn.Linear(d_model, d_model)
         self.v_w = nn.Linear(d_model, d_model)
+        self._att_dropout = nn.Dropout(0.1)
         #concat!
         self._linear_out = nn.Linear(d_model, d_model)
 
@@ -60,6 +61,7 @@ class ImplicitMultiHeadAttention(nn.Module):
         QKt = torch.matmul(Q, K.transpose(-2, -1)) / self._att_scale # (_batch, num_heads, _seq, _seq)
         QKt.masked_fill_(mask == 0, -1e10)
         att_weights = torch.softmax(QKt, dim=-1)
+        att_weights = self._att_dropout(att_weights)
         pre_x = torch.matmul(att_weights, V) # (_batch, num_heads, _seq, d_att)
         x = pre_x.transpose(2,1).reshape(_batch, _seq, -1) # from (_batch, num_heads, _seq, d_att) to (_batch, _seq, num_heads, d_att) to (_batch, _seq, _dim)
         x = self._linear_out(x)
