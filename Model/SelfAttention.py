@@ -3,7 +3,7 @@ from torch import nn
 import math
 
 class MSelfAttention(nn.Module):
-    def __init__(self, inp_dim, outp_dim):
+    def __init__(self, inp_dim, outp_dim, ):
         super().__init__()
         self._internal_dim = outp_dim
         self.Q_W = nn.Linear(inp_dim, self._internal_dim)
@@ -21,4 +21,6 @@ class MSelfAttention(nn.Module):
         qkt.masked_fill_(mask == 0, -1e10) # mask is (batch, seq, seq) and we want to fill the positions where mask is 0 with large negative number, also the mask must be applied in a vertical format to the matrix as to mask out unwanted tokens
         weights = torch.softmax(qkt, dim=-1) # gotta provide the dim for softmax not get consfued!
         transformed = torch.matmul(weights, V) # its a matmul not element-wise
-        return self.dim_adj(transformed)
+        x = self.dim_adj(transformed)
+
+        return x, weights

@@ -26,11 +26,15 @@ class EplicitMultiHeadAttention(nn.Module):
         x = self._proj_layer(x)
         # att_inps = torch.transpose(x.view(_batch, _seq, self._num_heads, -1), 2, 1) # from (b, t, d) to (b, t, h, d) to (b, h, t, d) ! it was conceptually wrong this way heads won't have access to the full info!
         tmp_res = []
+        weights = []
         for head in self._heads:
-            tmp_res.append(head(x, mask))
+            att_res, weights = head(x, mask)
+            tmp_res.append(att_res)
+            weights.append(weights)
         x = torch.concat(tmp_res, dim=-1)
         x = self._out_Linear(x)
-        return x
+
+        return x, weights
     
 
 
@@ -66,5 +70,6 @@ class ImplicitMultiHeadAttention(nn.Module):
         pre_x = torch.matmul(att_weights, V) # (_batch, num_heads, _seq, d_att)
         x = pre_x.transpose(2,1).reshape(_batch, _seq, -1) # from (_batch, num_heads, _seq, d_att) to (_batch, _seq, num_heads, d_att) to (_batch, _seq, _dim)
         x = self._linear_out(x)
-        return x
+        
+        return x, att_weights
 
