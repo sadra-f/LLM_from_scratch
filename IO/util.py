@@ -22,3 +22,22 @@ def save_model(model_name, model, optimizer, scheduler, loss, epoch, tokenizer_n
     os.makedirs(target_dir, exist_ok=False)
     torch.save(check_point, target_dir + f"{model_name}_checkpoint.pt")
     return
+
+
+def load_model(config_path, model_class, optimizer_class, scheduler_class, device='cpu', max_epochs=50):
+    checkpoint = torch.load(config_path, map_location=device)
+    config = checkpoint['config']
+
+    model = model_class(config['vocab_size'], config['d_model'], config['num_layers'])
+    model.load_state_dict(checkpoint['model_state_dict'])
+
+    optimizer = optimizer_class(model.parameters())
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+
+    scheduler = scheduler_class(optimizer, T_max=max_epochs)
+    scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
+    
+    return model, optimizer, scheduler, epoch, loss
