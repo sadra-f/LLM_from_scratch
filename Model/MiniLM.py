@@ -5,7 +5,18 @@ from .Transformer import MTransformerBlock
 
 
 class MiniLM(nn.Module):
-    def __init__(self, vocab_size, d_model, num_layers, do_logits_output=True, transformer_heads=4, return_att=False, temperature=1):
+    def __init__(
+            self, 
+            vocab_size, 
+            d_model, 
+            num_layers, 
+            do_logits_output=True, 
+            transformer_heads=4, 
+            return_att=False, 
+            temperature=1, 
+            do_sample_output=False
+            ):
+
         super().__init__()
         
         self._vocab_size = vocab_size
