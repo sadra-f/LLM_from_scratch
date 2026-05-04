@@ -1,4 +1,4 @@
-
+import torch
 
 
 class MDataLoader:
@@ -46,7 +46,7 @@ class MDataLoader:
 
 
 
-import torch
+
 
 class StreamingWindowLoader:
     def __init__(self, file_path, tokenizer, window_size, stride=1):
