@@ -13,8 +13,8 @@ class MiniLM(nn.Module):
             do_logits_output=True, 
             transformer_heads=4, 
             return_att=False, 
-            temperature=1, 
-            do_sample_output=False
+            temperature=1,
+            max_window_size=256 
             ):
 
         super().__init__()
@@ -25,7 +25,7 @@ class MiniLM(nn.Module):
         # self._token_dim = int(3 * d_model / 4)
         # self._pos_dim = d_model - self._token_dim
         self._num_layers = num_layers
-        self._MAX_POS_VALUE = 256
+        self._MAX_POS_VALUE = max_window_size
         self.do_logits_output = do_logits_output
         self._return_att = return_att
         self.temperature = temperature
