@@ -5,7 +5,7 @@ from .Transformer import MTransformerBlock
 
 
 class MiniLM(nn.Module):
-    def __init__(self, vocab_size, d_model, num_layers, do_logits_output=True, transformer_heads=4, return_att=False):
+    def __init__(self, vocab_size, d_model, num_layers, do_logits_output=True, transformer_heads=4, return_att=False, temperature=1):
         super().__init__()
         
         self._vocab_size = vocab_size
@@ -17,6 +17,7 @@ class MiniLM(nn.Module):
         self._MAX_POS_VALUE = 256
         self.do_logits_output = do_logits_output
         self._return_att = return_att
+        self.temperature = temperature
 
         self._embedding = nn.Embedding(self._vocab_size, self._model_dim)
         self._pos_embedding = nn.Embedding(self._MAX_POS_VALUE, self._model_dim)
@@ -37,7 +38,7 @@ class MiniLM(nn.Module):
             x, _att = block(x, _casual_mask)
             att_weights.append(_att)
         
-        x = self._out_linear(x)
+        x = self._out_linear(x) / self.temperature
         if not self.do_logits_output:
             x = self._out_softmax(x)
         if self._return_att:
