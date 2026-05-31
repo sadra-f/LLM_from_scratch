@@ -26,10 +26,6 @@ VOCAB_SIZE = 50258
 NUM_LAYERS = 6
 EPOCHS = 50
 
-# CHECKPOINT_PATH = (
-#     "checkpoints/MiniLM/01-05-2026-17-29-37/MiniLM_checkpoint.pt"
-# )
-
 
 # ============================================================
 # Data
@@ -108,16 +104,23 @@ def sanity_check(
         text += tokenizer.decode(next_token)
 
     if view_heatmap:
+
+        token_ids = tokenizer.encode(text)["input_ids"]
+
         tokens = [
             tokenizer.decode(token)
-            for token in tokenizer.encode(text)["input_ids"][:-1]
+            for token in token_ids
         ]
 
-        layer_names = [str(i + 1) for i in range(len(weights))]
+        layer_names = [
+            f"Layer {i+1}"
+            for i in range(len(weights))
+        ]
 
         weights = [
-            torch.mean(layer[0], dim=0)
+            layer[0]                  # remove batch dimension
             .detach()
+            .cpu()
             .numpy()
             for layer in weights
         ]
@@ -125,8 +128,9 @@ def sanity_check(
         heatmap(
             weights,
             tokens,
-            "Attention weights heatmap",
+            title="Attention Weights",
             layer_names=layer_names,
+            max_tokens=32,
         )
 
     model.train()
@@ -143,16 +147,20 @@ def sanity_check(
 # Checkpoint
 # ============================================================
 
-# lm, optimizer, scheduler, _, _ = load_model(
-#     CHECKPOINT_PATH,
-#     MiniLM,
-#     AdamW,
-#     CosineAnnealingLR,
-#     "cpu",
-#     50,
-# )
+CHECKPOINT_PATH = (
+    "checkpoints/MiniLM/01-05-2026-17-29-37/MiniLM_checkpoint.pt"
+)
 
-# sanity_check(lm, "KING:", 32, do_sample=False)
+lm, optimizer, scheduler, _, _ = load_model(
+    CHECKPOINT_PATH,
+    MiniLM,
+    AdamW,
+    CosineAnnealingLR,
+    "cpu",
+    50,
+)
+
+sanity_check(lm, "KING:", 32, do_sample=True, view_heatmap=False)
 
 
 # ============================================================

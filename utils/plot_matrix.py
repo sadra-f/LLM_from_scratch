@@ -1,6 +1,12 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib as mpl
+from typing import List, Optional, Tuple, Union
+import math
+from typing import List, Optional
+import torch
+
+#Most of the code here is AI written sorry <3
 
 def heatmap(data, row_labels, col_labels, ax=None,
             cbar_kw=None, cbarlabel="", **kwargs):
@@ -118,183 +124,144 @@ def annotate_heatmap(im, data=None, valfmt="{x:.2f}",
     return texts
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import List, Optional, Tuple, Union
-
 def plot_attention_heatmaps(
     attention_weights: List[np.ndarray],
     row_col_values: List[str],
     title: Optional[str] = None,
-    figsize: Tuple[int, int] = (12, 10),
-    cmap: str = 'viridis',
-    separate_windows: bool = False,
-    vmin: Optional[float] = None,
-    vmax: Optional[float] = None,
     layer_names: Optional[List[str]] = None,
-    annot: bool = False,
-    fmt: str = '.2f',
-    cbar: bool = True
-) -> Union[plt.Figure, List[plt.Figure]]:
+    max_tokens: int = 32,
+    cmap: str = "magma",
+):
     """
-    Plot attention weights from different layers as heatmaps.
-    
-    Parameters:
-    -----------
-    attention_weights : List[np.ndarray]
-        List of attention weight matrices. Each element should be an M x M numpy array
-        where M is the number of tokens/positions.
-    
-    row_col_values : List[str]
-        List of strings of length M representing the labels for rows and columns.
-    
-    title : str, optional
-        Overall title for the figure (only applies when separate_windows=False).
-    
-    figsize : Tuple[int, int], default=(12, 10)
-        Size of each figure/window.
-    
-    cmap : str, default='viridis'
-        Colormap for the heatmap.
-    
-    separate_windows : bool, default=False
-        If True, each layer gets its own figure window.
-        If False, all layers are plotted as subplots in a single figure.
-    
-    vmin, vmax : float, optional
-        Minimum and maximum values for colormap normalization.
-        If None, use the min/max of the data.
-    
-    layer_names : List[str], optional
-        List of names for each layer. If None, uses 'Layer i'.
-    
-    annot : bool, default=False
-        If True, write the data value in each cell.
-    
-    fmt : str, default='.2f'
-        Format string for annotations when annot=True.
-    
-    cbar : bool, default=True
-        Whether to show colorbar.
-    
-    Returns:
-    --------
-    Union[plt.Figure, List[plt.Figure]]
-        If separate_windows=False, returns the single Figure object.
-        If separate_windows=True, returns a list of Figure objects.
+    Visualize transformer attention.
+
+    Expected input per layer:
+
+        attention_weights[layer]
+            shape = (num_heads, seq_len, seq_len)
+
+    Example:
+        layer_att = weights[layer][0].detach().cpu().numpy()
+
+    where:
+        weights[layer] shape:
+            (batch_size, num_heads, seq_len, seq_len)
+
+    and:
+        attention_weights.append(weights[layer][0])
     """
-    
-    n_layers = len(attention_weights)
-    
-    if not attention_weights:
-        raise ValueError("attention_weights list cannot be empty")
-    
-    # Check dimensions
-    M = len(row_col_values)
-    for i, weights in enumerate(attention_weights):
-        if weights.shape != (M, M):
-            raise ValueError(f"Layer {i} weights shape {weights.shape} doesn't match M={M}")
-    
-    # Set default layer names
+
+    if len(attention_weights) == 0:
+        raise ValueError("attention_weights cannot be empty")
+
     if layer_names is None:
-        layer_names = [f'Layer {i+1}' for i in range(n_layers)]
-    else:
-        if len(layer_names) != n_layers:
-            raise ValueError("layer_names length must match attention_weights length")
-    
-    # Set vmin/vmax if not provided
-    if vmin is None:
-        vmin = min([w.min() for w in attention_weights])
-    if vmax is None:
-        vmax = max([w.max() for w in attention_weights])
-    
-    if separate_windows:
-        # Separate windows for each layer
-        figures = []
-        for i, weights in enumerate(attention_weights):
-            fig = plt.figure(figsize=figsize)
-            ax = fig.add_subplot(111)
-            
-            # Create heatmap
-            im = ax.imshow(weights, cmap=cmap, vmin=vmin, vmax=vmax)
-            
-            # Set labels
-            ax.set_xticks(range(M))
-            ax.set_yticks(range(M))
-            ax.set_xticklabels(row_col_values, rotation=45, ha='right')
-            ax.set_yticklabels(row_col_values)
-            
-            # Set title
-            ax.set_title(layer_names[i], fontsize=14, fontweight='bold')
-            
-            # Add annotations if requested
-            if annot:
-                for i_idx in range(M):
-                    for j_idx in range(M):
-                        text = ax.text(j_idx, i_idx, format(weights[i_idx, j_idx], fmt),
-                                     ha="center", va="center", color="w" if weights[i_idx, j_idx] > (vmax+vmin)/2 else "k")
-            
-            # Add colorbar
-            if cbar:
-                plt.colorbar(im, ax=ax)
-            
-            plt.tight_layout()
-            figures.append(fig)
-        
-        # Show all figures
+        layer_names = [
+            f"Layer {i + 1}"
+            for i in range(len(attention_weights))
+        ]
+
+    tokens = row_col_values[-max_tokens:]
+
+    for layer_idx, layer_att in enumerate(attention_weights):
+
+        if isinstance(layer_att, torch.Tensor):
+            layer_att = layer_att.detach().cpu().numpy()
+
+        if layer_att.ndim != 3:
+            raise ValueError(
+                f"Layer {layer_idx} expected shape "
+                f"(heads, seq, seq) but got {layer_att.shape}"
+            )
+
+        layer_att = layer_att[
+            :,
+            -max_tokens:,
+            -max_tokens:
+        ]
+
+        num_heads = layer_att.shape[0]
+
+        ncols = min(4, num_heads)
+        nrows = math.ceil(num_heads / ncols)
+
+        fig, axes = plt.subplots(
+            nrows=nrows,
+            ncols=ncols,
+            figsize=(4 * ncols, 4 * nrows)
+        )
+
+        axes = np.array(axes).reshape(-1)
+
+        vmin = layer_att.min()
+        vmax = layer_att.max()
+
+        for head_idx in range(num_heads):
+
+            ax = axes[head_idx]
+
+            im = ax.imshow(
+                layer_att[head_idx],
+                cmap=cmap,
+                vmin=vmin,
+                vmax=vmax,
+                aspect="equal",
+                interpolation="nearest"
+            )
+
+            ax.set_title(
+                f"Head {head_idx}",
+                fontsize=10
+            )
+
+            tick_step = max(
+                1,
+                len(tokens) // 8
+            )
+
+            ticks = list(
+                range(
+                    0,
+                    len(tokens),
+                    tick_step
+                )
+            )
+
+            ax.set_xticks(ticks)
+            ax.set_yticks(ticks)
+
+            ax.set_xticklabels(
+                [tokens[i] for i in ticks],
+                rotation=90,
+                fontsize=7
+            )
+
+            ax.set_yticklabels(
+                [tokens[i] for i in ticks],
+                fontsize=7
+            )
+
+        for idx in range(num_heads, len(axes)):
+            axes[idx].axis("off")
+
+        fig.suptitle(
+            layer_names[layer_idx],
+            fontsize=16,
+            fontweight="bold"
+        )
+
+        fig.subplots_adjust(
+            right=0.90,
+            hspace=0.30,
+            wspace=0.25
+        )
+
+        cbar_ax = fig.add_axes(
+            [0.92, 0.15, 0.02, 0.70]
+        )
+
+        fig.colorbar(
+            im,
+            cax=cbar_ax
+        )
+
         plt.show()
-        return figures
-    
-    else:
-        # Single figure with subplots
-        # Calculate grid dimensions
-        n_cols = min(3, n_layers)
-        n_rows = (n_layers + n_cols - 1) // n_cols
-        
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(figsize[0]*n_cols, figsize[1]*n_rows))
-        
-        # Handle case of single subplot
-        if n_layers == 1:
-            axes = np.array([axes])
-        axes = axes.flatten()
-        
-        # Plot each layer
-        for i, weights in enumerate(attention_weights):
-            ax = axes[i]
-            
-            # Create heatmap
-            im = ax.imshow(weights, cmap=cmap, vmin=vmin, vmax=vmax)
-            
-            # Set labels
-            ax.set_xticks(range(M))
-            ax.set_yticks(range(M))
-            ax.set_xticklabels(row_col_values, rotation=45, ha='right')
-            ax.set_yticklabels(row_col_values)
-            
-            # Set title
-            ax.set_title(layer_names[i], fontsize=12, fontweight='bold')
-            
-            # Add annotations if requested
-            if annot:
-                for i_idx in range(M):
-                    for j_idx in range(M):
-                        text = ax.text(j_idx, i_idx, format(weights[i_idx, j_idx], fmt),
-                                     ha="center", va="center", color="w" if weights[i_idx, j_idx] > (vmax+vmin)/2 else "k",
-                                     fontsize=8)
-        
-        # Hide unused subplots
-        for i in range(n_layers, len(axes)):
-            axes[i].axis('off')
-        
-        # Add overall title
-        if title:
-            fig.suptitle(title, fontsize=16, fontweight='bold', y=1.02)
-        
-        # Add colorbar
-        if cbar:
-            fig.colorbar(im, ax=axes.tolist(), orientation='vertical', fraction=0.02)
-        
-        plt.tight_layout()
-        plt.show()
-        
-        return fig
