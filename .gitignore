@@ -4,3 +4,6 @@ __pycache__/
 *test*.py
 .cache/
 checkpoints/
+.virtual_repo/
+dataset/*.parquet
+dataset/*/*.parquet
