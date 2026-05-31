@@ -3,7 +3,7 @@ from torch import nn
 from .SelfAttention import MSelfAttention
 from .FeedForward import MFeedForward
 
-class EplicitMultiHeadAttention(nn.Module):
+class ExplicitMultiHeadAttention(nn.Module):
     def __init__(self, d_model, num_heads):
         if d_model % num_heads != 0:
             #Decided not to handle this which would lead to a messy code!
