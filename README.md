@@ -126,6 +126,14 @@ sanity_check(model, "To be, or not to be", limit=30)
 ```
 
 ---
+### Sample Attention Heatmaps
+
+* [Layer 2](sample_attention_heatmap_L2.png)
+* [Layer 4](sample_attention_heatmap_L4.png)
+* [Layer 6](sample_attention_heatmap_L6.png)
+
+
+---
 
 ## Notes
 
